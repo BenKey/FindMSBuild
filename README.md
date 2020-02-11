@@ -13,11 +13,11 @@ The FindMSBuild function uses the following algorithm.
 This algorithm is implemented in the following functions.
 
 * FindVSWhere
-  This helper function attempts to locate vswhere.exe. It is used by the [FindMSBuildUsingVSWhere][] function.
+  This helper function attempts to locate vswhere.exe. It is used by the FindMSBuildUsingVSWhere function.
 * FindMSBuildInPath
   This function attempts to locate MSBuild using the [PATH environment variable][].
 * FindMSBuildUsingVSWhere
-  This function first uses the [FindVSWhere][] function to locate vswhere.exe. If the [FindVSWhere][] function is successful, it uses vswhere.exe to locate MSBuild.
+  This function first uses the [FindVSWhere][] function to locate vswhere.exe. If the FindVSWhere function is successful, it uses vswhere.exe to locate MSBuild.
 * FindMSBuildUsingRegistry
   This function attempts to locate MSBuild using the HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\MSBuild\ToolsVersions system registry key.
 * FindMSBuild
