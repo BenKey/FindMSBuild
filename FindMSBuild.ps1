@@ -1,4 +1,27 @@
-function Get-RegistryValue($regKey, $valueName, $defaultValue) {
+<#
+.SYNOPSIS
+Finds MSBuild.exe and returns the path to the found file.
+
+.DESCRIPTION
+Finds MSBuild.exe and returns the path to the found file. Use one of the following techniques to find the file.
+
+* Searches for the file on the PATH.
+
+* Searches for the file using VSWhere.
+
+* Searches for the file using information found in the "HKLM:\SOFTWARE\Microsoft\MSBuild\ToolsVersions" registry key.
+
+.NOTES
+
+This script has the following side effects.
+
+* It sets the $MSBuild variable to the value returned by the Find-MSBuild function.
+
+* It sets the MSBuild environment variable to the value returned by the Find-MSBuild function.
+#>
+
+
+function GetRegistryValue($regKey, $valueName, $defaultValue) {
     $keyExists = Test-Path $regKey
     if (-NOT $keyExists) {
         return $defaultValue
@@ -13,7 +36,7 @@ function Get-RegistryValue($regKey, $valueName, $defaultValue) {
 function FindVSWhere {
     $regKey = "HKLM:\SOFTWARE\Microsoft\VisualStudio\Setup"
     $valueName = "SharedInstallationPath"
-    $installDir = Get-RegistryValue $regKey $valueName $null
+    $installDir = GetRegistryValue $regKey $valueName $null
     if ($installDir -ne $null) {
         $installDir = Split-Path -Path $installDir -Parent
         $vswhere = Join-Path -Path $installDir -ChildPath "Installer\vswhere.exe"
@@ -48,6 +71,9 @@ function FindMSBuildInPath {
 
 function FindMSBuildUsingVSWhere {
     $vswhere = FindVSWhere
+    if ($command -eq $null) {
+        return $null
+    }
     $path = & "$vswhere" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | select-object -first 1
     return $path
 }
@@ -58,7 +84,7 @@ function FindMSBuildUsingRegistry {
     foreach ($version in $versions) {
         $regKey = "HKLM:\SOFTWARE\Microsoft\MSBuild\ToolsVersions\$version"
         $valueName = "MSBuildToolsPath"
-        $MSBuildToolsPath = Get-RegistryValue $regKey $valueName $null
+        $MSBuildToolsPath = GetRegistryValue $regKey $valueName $null
         if ($MSBuildToolsPath -ne $null) {
             $MSBuild = Join-Path -Path $MSBuildToolsPath -ChildPath "MSBuild.exe"
         }
@@ -66,7 +92,7 @@ function FindMSBuildUsingRegistry {
     return $MSBuild
 }
 
-function FindMSBuild {
+function Find-MSBuild {
     $MSBuild = FindMSBuildInPath
     if ($MSBuild -ne $null) {
         return $MSBuild
@@ -79,7 +105,7 @@ function FindMSBuild {
     return $MSBuild
 }
 
-$MSBuild = FindMSBuild
+$MSBuild = Find-MSBuild
 if ($MSBuild -eq $null) {
     Write-Host "MSBuild Not Found."
 }
