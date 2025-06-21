@@ -20,7 +20,6 @@ This script has the following side effects.
 * It sets the MSBuild environment variable to the value returned by the Find-MSBuild function.
 #>
 
-
 function GetRegistryValue($regKey, $valueName, $defaultValue) {
     $keyExists = Test-Path $regKey
     if (-NOT $keyExists) {
@@ -71,11 +70,11 @@ function FindMSBuildInPath {
 
 function FindMSBuildUsingVSWhere {
     $vswhere = FindVSWhere
-    if ($command -eq $null) {
+    if ($vswhere -eq $null) {
         return $null
     }
-    $path = & "$vswhere" -latest -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | select-object -first 1
-    return $path
+    $MSBuild = & "$vswhere" "-latest" "-requires" "Microsoft.Component.MSBuild" "-find" "MSBuild\**\Bin\MSBuild.exe" | select-object -first 1
+    return $MSBuild
 }
 
 function FindMSBuildUsingRegistry {
@@ -93,11 +92,11 @@ function FindMSBuildUsingRegistry {
 }
 
 function Find-MSBuild {
-    $MSBuild = FindMSBuildInPath
+    $MSBuild = FindMSBuildUsingVSWhere
     if ($MSBuild -ne $null) {
         return $MSBuild
     }
-    $MSBuild = FindMSBuildUsingVSWhere
+    $MSBuild = FindMSBuildInPath
     if ($MSBuild -ne $null) {
         return $MSBuild
     }
@@ -105,9 +104,18 @@ function Find-MSBuild {
     return $MSBuild
 }
 
-$MSBuild = Find-MSBuild
-if ($MSBuild -eq $null) {
-    Write-Host "MSBuild Not Found."
+function Set-MSBuild-Environment-Variables {
+    $MSBuild = Find-MSBuild
+    if ($MSBuild -eq $null) {
+        return $false
+    }
+    Set-Item -Path Env:MSBuild -Value $MSBuild
+    Write-Host "Set MSBuild environment variable to '$MSBuild'."
+    $MSBuildDir = [System.IO.Path]::GetDirectoryName($MSBuild)
+    Set-Item -Path Env:MSBuildDir -Value $MSBuildDir
+    Write-Host "Set MSBuildDir environment variable to '$MSBuildDir'."
+    $env:Path = $env:Path + ";$MSBuildDir"
+    return $true
 }
-Write-Host "MSBuild found at '$MSBuild'."
-Set-Item -Path Env:MSBuild -Value $MSBuild
+
+Set-MSBuild-Environment-Variables
